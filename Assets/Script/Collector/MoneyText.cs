@@ -1,27 +1,18 @@
-using TMPro;
 using UnityEngine;
+using TMPro;
 
 public class MoneyUI : MonoBehaviour
 {
-    public static MoneyUI Instance;
-
     public TextMeshProUGUI moneyText;
-
-    private void Awake()
-    {
-        Instance = this;
-    }
 
     private void Start()
     {
-        Refresh();
+        UpdateUI();
+        MoneyManager.Instance.onMoneyChanged += UpdateUI;
     }
 
-    public void Refresh()
+    void UpdateUI()
     {
-        if (MoneyManager.Instance == null) return;
-
-        int money = MoneyManager.Instance.money;
-        moneyText.text = "$" + money.ToString();
+        moneyText.text = MoneyManager.Instance.money.ToString() + "$";
     }
 }

@@ -1,10 +1,13 @@
 using UnityEngine;
+using System;
 
 public class MoneyManager : MonoBehaviour
 {
     public static MoneyManager Instance;
 
     public int money = 0;
+
+    public Action onMoneyChanged;
 
     private void Awake()
     {
@@ -13,6 +16,7 @@ public class MoneyManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
@@ -20,10 +24,12 @@ public class MoneyManager : MonoBehaviour
     public void AddMoney(int amount)
     {
         money += amount;
-        Debug.Log("💰 Money: " + money);
+        onMoneyChanged?.Invoke();
+    }
 
-        // 🔥 update UI
-        if (MoneyUI.Instance != null)
-            MoneyUI.Instance.Refresh();
+    public void SpendMoney(int amount)
+    {
+        money -= amount;
+        onMoneyChanged?.Invoke();
     }
 }

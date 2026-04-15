@@ -22,9 +22,6 @@ public class Spawner : MonoBehaviour
     public float minRotation = -25f;
     public float maxRotation = 25f;
 
-    [Header("Rarity")]
-    public List<RarityWeight> baseWeights;
-
     private int currentCount = 0;
 
     private void Start()
@@ -54,7 +51,7 @@ public class Spawner : MonoBehaviour
 
         GameObject obj = Instantiate(itemPrefab, pos, Quaternion.identity);
 
-        // 🔥 GÁN DATA
+        // GÁN DATA
         var drag = obj.GetComponent<DragItem>();
         if (drag != null)
             drag.data = data;
@@ -79,74 +76,36 @@ public class Spawner : MonoBehaviour
             life.onDespawn += () => currentCount--;
     }
 
-    // ===== RARITY SYSTEM =====
+    // ===== RARITY SYSTEM FINAL =====
 
     ItemData GetSpawnItem()
     {
-        var weights = GetFinalWeights();
-        var rarity = RollRarity(weights);
-        return GetItemByRarity(rarity);
-    }
+        int rareLevel = UpgradeManager.Instance.GetRareLevel();
+        var config = UpgradeManager.Instance.GetConfig();
+        float bonus = 1 + rareLevel * (config != null ? config.rareBonusPerLevel : 0.25f);
 
-    List<RarityWeight> GetFinalWeights()
-    {
-        int level = UpgradeManager.Instance.GetRareLevel();
-
-        List<RarityWeight> result = new();
-
-        foreach (var w in baseWeights)
-        {
-            float value = w.weight;
-
-            if (w.rarity == Rarity.Rare ||
-                w.rarity == Rarity.Epic ||
-                w.rarity == Rarity.Legendary)
-            {
-                value *= (1 + level * 0.25f);
-            }
-
-            result.Add(new RarityWeight
-            {
-                rarity = w.rarity,
-                weight = value
-            });
-        }
-
-        return result;
-    }
-
-    Rarity RollRarity(List<RarityWeight> weights)
-    {
-        float total = 0;
-        foreach (var w in weights)
-            total += w.weight;
-
-        float rand = Random.value * total;
-
-        float sum = 0;
-        foreach (var w in weights)
-        {
-            sum += w.weight;
-            if (rand <= sum)
-                return w.rarity;
-        }
-
-        return Rarity.Common;
-    }
-
-    ItemData GetItemByRarity(Rarity rarity)
-    {
-        List<ItemData> list = new();
+        List<ItemData> pool = new();
 
         foreach (var item in allItemDatas)
         {
-            if (item.rarity == rarity)
-                list.Add(item);
+            int weight = 1;
+
+            switch (item.rarity)
+            {
+                case Rarity.Common: weight = 50; break;
+                case Rarity.Uncommon: weight = 30; break;
+                case Rarity.Rare: weight = 15; break;
+                case Rarity.Epic: weight = 4; break;
+                case Rarity.Legendary: weight = 1; break;
+            }
+
+            if (item.rarity >= Rarity.Rare)
+                weight = Mathf.RoundToInt(weight * bonus);
+
+            for (int i = 0; i < weight; i++)
+                pool.Add(item);
         }
 
-        if (list.Count == 0)
-            return allItemDatas[Random.Range(0, allItemDatas.Length)];
-
-        return list[Random.Range(0, list.Count)];
+        return pool[Random.Range(0, pool.Count)];
     }
 }

@@ -6,11 +6,20 @@ public class UpgradeManager : MonoBehaviour
     public static UpgradeManager Instance;
 
     public string currentMapId = "Map1";
+    public MapUpgradeConfig[] configs;
 
     private Dictionary<string, MapUpgradeData> mapData = new();
 
+    public System.Action onUpgradeChanged;
+
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
@@ -18,22 +27,24 @@ public class UpgradeManager : MonoBehaviour
     public MapUpgradeData GetData()
     {
         if (!mapData.ContainsKey(currentMapId))
-        {
             mapData[currentMapId] = new MapUpgradeData();
-        }
 
         return mapData[currentMapId];
     }
 
-    public int GetRareLevel()
+    public MapUpgradeConfig GetConfig()
     {
-        return GetData().rareLevel;
+        foreach (var c in configs)
+        {
+            if (c.mapId == currentMapId)
+                return c;
+        }
+
+        return null;
     }
 
-    public int GetValueLevel()
-    {
-        return GetData().valueLevel;
-    }
+    public int GetRareLevel() => GetData().rareLevel;
+    public int GetValueLevel() => GetData().valueLevel;
 
     public void UpgradeRare()
     {
@@ -43,8 +54,10 @@ public class UpgradeManager : MonoBehaviour
         int cost = GetCost(d.rareLevel);
         if (MoneyManager.Instance.money < cost) return;
 
-        MoneyManager.Instance.money -= cost;
+        MoneyManager.Instance.SpendMoney(cost);
         d.rareLevel++;
+
+        onUpgradeChanged?.Invoke();
     }
 
     public void UpgradeValue()
@@ -55,13 +68,20 @@ public class UpgradeManager : MonoBehaviour
         int cost = GetCost(d.valueLevel);
         if (MoneyManager.Instance.money < cost) return;
 
-        MoneyManager.Instance.money -= cost;
+        MoneyManager.Instance.SpendMoney(cost);
         d.valueLevel++;
+
+        onUpgradeChanged?.Invoke();
     }
 
     public int GetCost(int level)
     {
-        return Mathf.RoundToInt(50 * Mathf.Pow(1.5f, level));
+        var config = GetConfig();
+        if (config == null) return 0;
+
+        return Mathf.RoundToInt(
+            config.baseCost * Mathf.Pow(config.costMultiplier, level)
+        );
     }
 }
 

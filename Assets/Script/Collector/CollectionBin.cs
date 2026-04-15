@@ -6,27 +6,19 @@ public class CollectionBin : MonoBehaviour
 
     public bool TryCollect(ItemData data)
     {
-        if (data == null)
-        {
-            Debug.Log("❌ data NULL");
-            return false;
-        }
+        if (data == null) return false;
 
         if (data.type != acceptType)
-        {
-            Debug.Log("❌ Sai loại");
             return false;
-        }
 
-        int level = UpgradeManager.Instance.GetValueLevel();
+        int valueLevel = UpgradeManager.Instance.GetValueLevel();
+        var config = UpgradeManager.Instance.GetConfig();
 
-        float multiplier = 1f + level * 0.25f;
+        float multiplier = 1 + valueLevel * (config != null ? config.valueBonusPerLevel : 0.2f);
 
-        int finalValue = Mathf.RoundToInt(data.baseValue * multiplier);
+        int finalMoney = Mathf.RoundToInt(data.baseValue * multiplier);
 
-        MoneyManager.Instance.AddMoney(finalValue);
-
-        Debug.Log($"💰 +{finalValue}");
+        MoneyManager.Instance.AddMoney(finalMoney);
 
         return true;
     }
