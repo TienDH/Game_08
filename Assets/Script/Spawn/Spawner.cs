@@ -11,7 +11,7 @@ public class Spawner : MonoBehaviour
 
     [Header("Spawn")]
     public float spawnRate = 1.2f;
-    public int maxItems = 40;
+    public int baseMaxItems = 40; // 🔥 đổi tên cho rõ
 
     [Header("Area")]
     public Transform[] spawnAreas;
@@ -37,7 +37,11 @@ public class Spawner : MonoBehaviour
 
     private void SpawnItem()
     {
-        if (currentCount >= maxItems || spawnAreas.Length == 0) return;
+        if (spawnAreas.Length == 0) return;
+
+        // 🔥 check max item theo upgrade
+        if (currentCount >= GetMaxItems())
+            return;
 
         Transform area = spawnAreas[Random.Range(0, spawnAreas.Length)];
 
@@ -68,7 +72,10 @@ public class Spawner : MonoBehaviour
         // transform
         float scale = Random.Range(scaleRange.x, scaleRange.y);
         obj.transform.localScale = Vector3.one * scale;
-        obj.transform.rotation = Quaternion.Euler(0, 0, Random.Range(minRotation, maxRotation));
+
+        obj.transform.rotation = Quaternion.Euler(
+            0, 0, Random.Range(minRotation, maxRotation)
+        );
 
         currentCount++;
 
@@ -76,29 +83,47 @@ public class Spawner : MonoBehaviour
             life.onDespawn += () => currentCount--;
     }
 
-    // ===== RARITY SYSTEM FINAL =====
+    // =========================
+    // 🔥 MAX ITEM (SPAWN UPGRADE)
+    // =========================
+
+    int GetMaxItems()
+    {
+        if (UpgradeManager.Instance == null)
+            return baseMaxItems;
+
+        var config = UpgradeManager.Instance.GetConfig();
+        int level = UpgradeManager.Instance.GetSpawnLevel();
+
+        if (config == null)
+            return baseMaxItems;
+
+        return baseMaxItems + level * config.spawnIncreasePerLevel;
+    }
+
+    // =========================
+    // 🔥 RARITY SYSTEM
+    // =========================
 
     ItemData GetSpawnItem()
     {
+        if (UpgradeManager.Instance == null)
+            return GetRandomItem();
+
         int rareLevel = UpgradeManager.Instance.GetRareLevel();
         var config = UpgradeManager.Instance.GetConfig();
-        float bonus = 1 + rareLevel * (config != null ? config.rareBonusPerLevel : 0.25f);
+
+        float bonus = 1 + rareLevel * (
+            config != null ? config.rareBonusPerLevel : 0.25f
+        );
 
         List<ItemData> pool = new();
 
         foreach (var item in allItemDatas)
         {
-            int weight = 1;
+            int weight = GetBaseWeight(item.rarity);
 
-            switch (item.rarity)
-            {
-                case Rarity.Common: weight = 50; break;
-                case Rarity.Uncommon: weight = 30; break;
-                case Rarity.Rare: weight = 15; break;
-                case Rarity.Epic: weight = 4; break;
-                case Rarity.Legendary: weight = 1; break;
-            }
-
+            // buff item hiếm
             if (item.rarity >= Rarity.Rare)
                 weight = Mathf.RoundToInt(weight * bonus);
 
@@ -106,6 +131,28 @@ public class Spawner : MonoBehaviour
                 pool.Add(item);
         }
 
+        if (pool.Count == 0)
+            return GetRandomItem();
+
         return pool[Random.Range(0, pool.Count)];
+    }
+
+    int GetBaseWeight(Rarity rarity)
+    {
+        switch (rarity)
+        {
+            case Rarity.Common: return 50;
+            case Rarity.Uncommon: return 30;
+            case Rarity.Rare: return 15;
+            case Rarity.Epic: return 4;
+            case Rarity.Legendary: return 1;
+        }
+
+        return 1;
+    }
+
+    ItemData GetRandomItem()
+    {
+        return allItemDatas[Random.Range(0, allItemDatas.Length)];
     }
 }

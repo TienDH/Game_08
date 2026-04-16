@@ -11,14 +11,21 @@ public class CollectionBin : MonoBehaviour
         if (data.type != acceptType)
             return false;
 
+        if (UpgradeManager.Instance == null)
+            return false;
+
         int valueLevel = UpgradeManager.Instance.GetValueLevel();
         var config = UpgradeManager.Instance.GetConfig();
 
-        float multiplier = 1 + valueLevel * (config != null ? config.valueBonusPerLevel : 0.2f);
+        // 🔥 FIX NULL
+        float bonus = (config != null) ? config.valueBonusPerLevel : 0.2f;
+
+        float multiplier = 1 + valueLevel * bonus;
 
         int finalMoney = Mathf.RoundToInt(data.baseValue * multiplier);
 
-        MoneyManager.Instance.AddMoney(finalMoney);
+        if (MoneyManager.Instance != null)
+            MoneyManager.Instance.AddMoney(finalMoney);
 
         return true;
     }
