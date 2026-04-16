@@ -15,17 +15,7 @@ public class DragItem : MonoBehaviour
     {
         cam = Camera.main;
     }
-    void Update()
-    {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Vector2 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            var hit = Physics2D.Raycast(pos, Vector2.zero);
 
-            if (hit.collider != null)
-                Debug.Log("Click trúng: " + hit.collider.name);
-        }
-    }
     private void OnMouseDown()
     {
         dragging = true;
@@ -50,13 +40,9 @@ public class DragItem : MonoBehaviour
     }
     private void TryDropAll()
     {
-        
         Vector2 pos = cam.ScreenToWorldPoint(Input.mousePosition);
         Collider2D[] hits = Physics2D.OverlapPointAll(pos);
-        foreach (var hit in hits)
-        {
-            Debug.Log("Hit: " + hit.name);
-        }
+
         // 🔥 ƯU TIÊN BIN TRƯỚC
         foreach (var hit in hits)
         {
@@ -93,53 +79,6 @@ public class DragItem : MonoBehaviour
         }
 
         // ❌ KHÔNG TRÚNG GÌ
-        StartCoroutine(Return());
-    }
-
-    private void TryDrop()
-    {
-        Vector2 mousePos = cam.ScreenToWorldPoint(Input.mousePosition);
-        Collider2D[] hits = Physics2D.OverlapPointAll(mousePos);
-
-        foreach (var hit in hits)
-        {
-            Bag bag = hit.GetComponent<Bag>() ?? hit.GetComponentInParent<Bag>();
-            if (bag != null)
-            {
-                bag.AddItem(data);
-                Destroy(gameObject);
-                return;
-            }
-        }
-
-        StartCoroutine(Return());
-    }
-    private void TryDropToBin()
-    {
-        Vector2 pos = cam.ScreenToWorldPoint(Input.mousePosition);
-        Collider2D[] hits = Physics2D.OverlapPointAll(pos);
-
-        foreach (var hit in hits)
-        {
-            CollectionBin bin = hit.GetComponent<CollectionBin>() ?? hit.GetComponentInParent<CollectionBin>();
-
-            if (bin != null)
-            {
-                bool success = bin.TryCollect(data);
-
-                if (success)
-                {
-                    Destroy(gameObject); // ✅ bán xong → biến mất
-                }
-                else
-                {
-                    StartCoroutine(Return());
-                }
-
-                return;
-            }
-        }
-
         StartCoroutine(Return());
     }
 
